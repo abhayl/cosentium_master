@@ -1,0 +1,186 @@
+id
+user_name
+full_name
+password
+encrypted_pwd
+email_id
+contact_number
+sms_pin
+sms_contact_number
+user_role
+shop_name
+address
+state
+status
+activation_date
+modified_date
+modified_by
+created_date
+created_by
+
+
+/*Table structure for table `users` */
+
+DROP TABLE IF EXISTS `users`;
+
+CREATE TABLE `users` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `username` varchar(60) NOT NULL,
+  `full_name` varchar(100) NOT NULL,
+  `shop_name` varchar(100) NOT NULL,
+  `address` varchar(100) NOT NULL,
+  `password` varchar(100) DEFAULT NULL,
+  `last_password_1` varchar(100) DEFAULT NULL,
+  `last_password_2` varchar(100) DEFAULT NULL,
+  `email_id` varchar(100) DEFAULT NULL,
+  `created` datetime NOT NULL,
+  `created_by` datetime NOT NULL,
+  `modified` datetime DEFAULT NULL,
+  `modified_by` int(10) DEFAULT NULL,
+  `contact_number` int(10) DEFAULT NULL,
+  `sms_contact_number` int(10) DEFAULT NULL,
+  `sms_pin` int(5) DEFAULT NULL,
+  `last_access_dt` datetime DEFAULT NULL,
+  `last_unsuccess_access_dt` datetime DEFAULT NULL,
+  `unsuccess_access_counter` tinyint(4) DEFAULT NULL,
+  `status` tinyint(4) unsigned NOT NULL DEFAULT '0',
+  `last_unsuccess_security_access_dt` datetime DEFAULT NULL,
+  `unsuccess_security_counter` tinyint(4) DEFAULT NULL,
+  `security_question_id` int(10) unsigned DEFAULT NULL,
+  `security_answer` varchar(50) DEFAULT NULL,
+  `last_password_updated_dt` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username` (`username`),
+  KEY `status` (`status`),
+  KEY `security_question_id` (`security_question_id`),
+  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`status`) REFERENCES `status` (`sid`),
+  CONSTRAINT `users_ibfk_2` FOREIGN KEY (`security_question_id`) REFERENCES `security_questions` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=258 DEFAULT CHARSET=utf8;
+
+
+
+--
+-- Table structure for table `roles`
+--
+
+CREATE TABLE IF NOT EXISTS `code_categories` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `code` int(4) NOT NULL,
+  `category` char(50) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+
+CREATE TABLE IF NOT EXISTS `operator_codes` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `code` char(20) NOT NULL,
+  `operator_name` char(50) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+INSERT INTO `operator_codes` (`id`, `code`, `operator_name`) VALUES
+(1, 'AT', 'AIRTEL' ),
+(2, 'BS', 'BSNL' ),
+(3, 'BSS', 'BSNL SPECIAL' ),
+(4, 'IDX', 'IDEA' ),
+(6, 'VF', 'VODAFONE' ),
+(7, 'RL', 'RELIANCE CDMA' ),
+(8, 'RG', 'RELIANCE GSM' ),
+(9, 'UN', 'UNINOR' ),
+(10, 'UNS', 'UNINOR SPECIAL' ),
+(11, 'MS', 'MTS' ),
+(12, 'AS', 'AIRCEL' ),
+(13, 'TD', 'TATA DOCOMO GSM' ),
+(14, 'TDS', 'TATA DOCOMO GSM SPECIAL' ),
+(15, 'TI', 'TATA INDICOM (CDMA)' ),
+(16, 'MTD', 'MTNL DELHI' ),
+(17, 'MTDS', 'MTNL DELHI SPECIAL' ),
+(18, 'MTM', 'MTNL MUMBAI' ),
+(19, 'MTMS', 'MTNL MUMBAI SPECIAL' ),
+(20, 'VD', 'VIDEOCON' ),
+(21, 'VDS', 'VIDEOCON SPECIAL' ),
+(22, 'VG', 'VIRGIN GSM' ),
+(23, 'VGS', 'VIRGIN GSM SPECIAL' ),
+(24, 'VC', 'VIRGIN CDMA' ),
+(25, 'T24', 'T24' ),
+(26, 'T24S', 'T24 SPECIAL' ),
+(27, 'TW', 'TATA WALKY' );
+
+CREATE TABLE IF NOT EXISTS `dth_codes` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `code` char(10) NOT NULL,
+  `operator_name` char(50) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+INSERT INTO `dth_codes` (`id`, `code`, `operator_name`) VALUES
+(1, 'AD', 'AIRTEL DTH' ),
+(2, 'SD', 'SUN DIRECT DTH' ),
+(3, 'TS', 'TATA SKY' ),
+(4, 'DT', 'DISH TV' ),
+(5, 'BT', 'RELIANCE BIG TV' ),
+(6, 'VT', 'VIDEOCON D2H' );
+
+
+
+CREATE TABLE IF NOT EXISTS `circle_codes` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `code` int(4) NOT NULL,
+  `operator_name` char(50) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+--
+-- Dumping data for table `roles`
+--
+
+INSERT INTO `roles` (`id`, `name`) VALUES
+(1, ),
+(2, ),
+(3, );
+
+
+
+
+--
+-- Table structure for table `roles`
+--
+
+CREATE TABLE IF NOT EXISTS `roles` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name` char(50) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+--
+-- Dumping data for table `roles`
+--
+
+INSERT INTO `roles` (`id`, `name`) VALUES
+(1, 'Sys Admin'),
+(2, 'Distributor'),
+(3, 'Retailer');
+
+
+--
+-- Table structure for table `security_questions`
+--
+
+CREATE TABLE IF NOT EXISTS `security_questions` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `question` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+--
+-- Dumping data for table `security_questions`
+--
+
+INSERT INTO `security_questions` (`id`, `question`) VALUES
+(1, '--No Selection--'),
+(2, 'What city were you born in?'),
+(3, 'What was the name of your first pet?'),
+(4, 'What is your mother''s middle name?'),
+(5, 'What is the name of an elementary school you attended?');
+
+-- --------------------------------------------------------

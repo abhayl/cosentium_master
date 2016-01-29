@@ -1,0 +1,123 @@
+<?php 
+class Redline extends AppModel {
+	public $name = 'Redline';
+	public $validate = array(
+			's3_key' => array(
+				'rule1' => array('rule' => array('checkEmptyFile'), 'message' => 'You must select a file.'),
+				'rule2' => array('rule' => array('extension', array('docx')),'message' => 'File type not supported.')
+			),
+			'name' => array(
+				'rule1' => array('rule' => array('checkEmptyFileName'), 'message' => 'You must select a value.')
+			)
+		);	
+	public $belongsTo = array (
+	'Deal' => array (
+				'classname' => 'Deal',
+                'foreignKey' => false,
+                'conditions' => 'Redline.deal_id = Deal.id'
+			),
+	'File' => array(
+                'classname' => 'File',
+                'foreignKey' => false,
+                'conditions' => 'Redline.files_id = File.id'
+            )		
+	 );
+	
+	function __construct() {
+		parent::__construct();
+		$this->tablePrefix = CakeSession::read('user.Company.company_name'). '_';
+		$this->useTable = 'deal_revisions';
+	}
+	
+	public function checkEmptyFileName($data) {
+            if(empty($data['name'])){
+                    return false;
+            }
+            return true;
+    }
+	
+    public function checkEmptyFile($data) {
+		if(empty($data['s3_key']['name'])){
+				return false;
+		}
+		return true;
+    }
+	
+	/**
+	 * @name 			getDealCondition 
+	 * @description		         			
+	 * @parm	        deal_id
+	 * @return	        deal revisions of a deal	 
+	 */ 
+	public function getDealRedlines($dealId) {
+		return $this->find('all', array('conditions' => array('Deal.id' => $dealId)));
+	}
+	
+	/**
+	 * @name 			saveRedline 
+	 * @description		save the revision of deal         			
+	 * @parm	        revisions data
+	 * @return	        	 
+	 */
+	public function saveRedline($data) {
+		$this->create();
+		$this->data = $data[$this->name];
+		if($this->Save($data)) {
+			return true;
+		} else {
+			return false;
+		}
+		
+	}
+	
+	public function uploadRedline($redlineData){
+        $file = explode('.', $redlineData['Redline']['s3_key']['name']);
+        if (strlen($file[0]) > Configure::read('FILENAME_STRING_LENGTH')) {
+            $file[0] = substr($file[0], 0, Configure::read('FILENAME_STRING_LENGTH'));
+        }
+        $filename = $file[0].'_'.date(Configure::read('DB_DATEIMG_FORMAT')).'.'.$file[1];
+        if($this->storeDoc($redlineData['Redline']['s3_key']['tmp_name'], Configure::read('MASTER_DOC_PATH') . $filename)){
+            if($lastInsertedId = $this->File->saveData(array('File' => array('s3_key' => $filename)), true, null)){
+				$turn =  $this->find('count', array('conditions' => array('Deal.id' => $redlineData['Redline']['dealRefId'])));
+				$data['Redline'] = array(
+					'deal_id' => $redlineData['Redline']['dealRefId'],
+					'stage' => '1<sup>st</sup> Redline Response Received', // TO be taken from the count and config file
+					'turn' => $turn + 1,
+					'material_changes'   => 0,
+					'non_material_changes'   => 0,
+					'total_changes'   => 0,
+					'user_id' => CakeSession::read('user.User.id'),
+					'files_id' => $lastInsertedId
+				);
+				
+                if($this->saveRedline($data)){
+					 return Configure::read('RECEIVE_DEAL_SUCCESS');
+                } else {
+					return Configure::read('RECEIVE_DEAL_FAIL');
+				}
+            }
+        } else {
+			return Configure::read('RECEIVE_DEAL_FAIL');
+		}
+		// Save
+        return true;
+    }
+	
+	public function getDealInfo($dealId) {
+		// This will get the last document issued
+		return $this->find('first', 
+								array(
+									'conditions' => array('Deal.id' => $dealId, 'Redline.stage LIKE' => '%Issued%'),
+									'order' => array('Redline.id' => 'desc')
+							));
+	}
+
+    public function storeDoc($tmpname, $filepath){
+        if(move_uploaded_file($tmpname, $filepath))
+            return true;
+        else
+            return false;
+    }
+}
+
+

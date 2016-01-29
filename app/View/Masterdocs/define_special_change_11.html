@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=9" />
+<!--[if lt IE 9]> 
+    <script src="js/html5.js"></script> 
+<![endif]-->
+<title>Untitled Document</title>
+<link type="text/css" rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+<script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+<script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+<script>
+  $(function() {
+	//  selectText('foo');
+    $( "#datepicker3" ).datepicker({
+		/*showOn: "button",
+      	buttonImage: "img/calendar.jpg",
+      	buttonImageOnly: true*/
+	});
+	$( "#datepicker4" ).datepicker({
+		/*showOn: "button",
+     	buttonImage: "img/calendar.jpg",
+      	buttonImageOnly: true*/
+	});
+  });
+  
+  
+  function selectText(element) {
+	  //alert("1"+ element);
+    var doc = document;
+    var text = doc.getElementById(element);    
+
+    if (doc.body.createTextRange) { // ms
+        var range = doc.body.createTextRange();
+        range.moveToElementText(text);
+        range.select();
+    } else if (window.getSelection) { // moz, opera, webkit
+        var selection = window.getSelection();            
+        var range = doc.createRange();
+        range.selectNodeContents(text);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+}
+
+$(document).ready(function() {
+ 
+	var changeTooltipPosition = function(event) {
+	  var tooltipX = event.pageX - 8;
+	  var tooltipY = event.pageY + 8;
+	  $('div.tooltip').css({top: tooltipY, left: tooltipX});
+	};
+ 
+	var showTooltip = function(event) {
+	  $('div.tooltip').remove();
+	  $('<div class="tooltip">Section name: <span>Hours of Operations</span> <br>Decision maker: <span>John Fry</span><br>Openion Provider: <span>Laura Johnson, Jason John, John Taylor<span></div>')
+            .appendTo('body');
+	  changeTooltipPosition(event);
+	};
+ 
+	var hideTooltip = function() {
+	   $('div.tooltip').remove();
+	};
+ 
+	$("#hint,#hint1").bind({
+	   mousemove : changeTooltipPosition,
+	   mouseenter : showTooltip,
+	   mouseleave: hideTooltip
+	});
+});
+  </script>
+</head>
+
+<body class="innercontainer">
+<div class="wrapper">
+<div>
+<div class="innerheader">
+<div class="inner_logo_panel">
+    <div class="innerlogo">
+        Cosentium
+    </div>
+    <div class="top_links">
+    <div>mr.someone@email.com</div>
+    <div class="dropdown-style" id="drop">
+    <!--<div>--><img src="img/user_icon.png" style="vertical-align:middle"><img src="img/user_icon_white_arrow.png" style="vertical-align:middle;padding-left:2px;" id="arrowimg"><!--</div>-->
+    </div>
+    <div class="toplinks_dropdown-menu">
+        <div class="user_pic_class"><img src="img/user_menu_pic.png"></div>
+    	<ul id="user-menu" >
+        <li><a href="#">Manage Profile Dashboard</a></li>
+        <li><a href="#">Personal Account Info</a></li>
+        <li><a href="#">Profile Picture</a></li>
+        <li><a href="#">Manage Delegation</a></li>
+        <li><a href="#">Change Password</a></li>
+       </ul>
+       <div class="last"><a href="#">Logout</a></div>
+       </div>
+    
+    <div><img src="img/helpmenu.jpg" style="vertical-align:middle"></div>
+    </div>
+    <div style="clear:both"></div>
+</div>
+<div class="menu_div">
+ 
+<ul>
+<li><a href="#" id="home" class="active">Home</a></li>
+<li><a href="#" id="deals">Deals</a></li>
+<li><a href="#" id="work">Work Items</a></li>
+<li><a href="#" id="docs">Documents</a></li>
+<li><a href="#" id="rpt">Reports</a></li>
+<!--<li><a href="#">Feedback</a></li>
+<li><a href="#">Blog</a></li>
+<li><a href="#">Contact Us</a></li>-->
+</ul>
+
+</div>
+</div>
+<div class="innercontent">
+<div class="left">
+<div class="links">
+ <a href="#" id="link1">Users</a>
+ <a href="#" id="link2">Roles</a>
+ <a href="#" id="link3" class="act">Master Document</a>
+ <a href="#" id="link4">Workflow</a>
+</div>
+</div>
+<div class="right">
+
+<div class="heading">Add Master Document | Define special change controls</div>
+
+
+<div class="clsbodynav">
+<div class="clsbodynavinnerone unselectedstep">
+<div >1</div>
+Upload Master Document
+</div>
+<div class="clsbodynavinnertwo unselectedstep">
+<div >2</div>
+Describe Document</div>
+<div class="clsbodynavinnerthree unselectedstep">
+<div >3</div>
+Define Default Change Controls</div>
+<div class="clsbodynavinnerfour selectedstep">
+<div >4</div>
+Define Special Change Controls</div>
+<div class="clsone"></div>
+</div>
+<div class="descdocformcontainer">
+<div class="blueheading_nopadding">Master Document : &lt;Friendly Document Name&gt; , Section Name:&lt;Section Name&gt;</div>
+</div>
+<div class="userlistcontainer">
+	<table width="100%" border="0" class="usr_list_tbl" cellpadding="0" cellspacing="0">
+         <thead>
+              <tr class="special_tbl_height20">
+                <th width="71%" align="center">&nbsp;</th>
+              </tr>
+          </thead>
+          <tbody>
+              <tr class="odd">
+                
+                <td align="left">
+                <div class="contract_viewer" id="foo" onselect="javascript:selectText('foo');">
+                <section>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras ornare iaculis cursus. Maecenas sollicitudin laoreet ornare. Pellentesque at <mark style="background-color:#63fffc; color:#678080;" id="hint1">diam sed nulla feugiat ullamcorper. Cras eu mi massa, quis gravida lectus. Pellentesque id tellus non odio tincidunt commodo. Quisque sit amet tortor sapien, sit amet lacinia nisl. Praesent felis tellus, tempus nec consectetur consectetur, vestibulum non dui. Duis egestas faucibus ipsum a commodo. In eleifend, est quis tempus pulvinar, magna nulla Vestibulum consectetur mi enim.</mark> Donec egestas laoreet elit vel consequat. Nullam sit amet lectus ac urna venenatis rhoncus eget vitae mi. Pellentesque eu massa eget est auctor auctor vitae nec nunc. Integer rhoncus vestibulum egestas. Curabitur vehicula rutrum metus, eu congue purus bibendum blandit. Donec faucibus suscipit purus ut egestas. Proin placerat purus velit, nec ultricies tortor. Mauris venenatis, Suspendisse leo ipsum, viverra ut molestie sed, euismod nec nibh.</section>
+                  <section ><mark style="background-color:#c7ffb6; color:#6d6d6d;" id="hint">Praesent sodales fermentum dolor, a luctus tortor cursus vel. Duis dignissim ultrices massa id vulputate. Praesent vitae nulla nulla, at dignissim neque. Suspendisse fringilla nisi eget augue imperdiet imperdiet in id quam. Donec dui nisi, sollicitudin ut sodales in, ultrices ac dolor. Vestibulum volutpat neque consequat ante aliquam sed gravida mi eleifend. Nunc et tellus ut eros vestibulum fringilla ac sit amet urna. Sed mattis posuere fermentum. Ut dapibus auctor sem, a egestas ipsum viverra ut molestie sed, euismod nec nibh. Praesent sodales fermentum dolor, a luctus tortor cursus vel. Duis dignissim ultrices massa id vulputate. Praesent vitae nulla nulla, at dignissim neque. Suspendisse fringilla nisi eget augue imperdiet imperdiet in id quam. Donec dui nisi, sollicitudin ut sodales in, ultrices ac dolor. Vestibulum volutpat neque consequat ante aliquam sed gravida mi eleifend. Nunc et tellus ut eros vestibulum fringilla ac sit amet urna. Sed mattis posuere fermentum. Ut dapibus auctor sem, a egestas ipsum</mark></section>
+<section>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras ornare iaculis cursus. Maecenas sollicitudin laoreet ornare. Pellentesque at diam sed nulla feugiat ullamcorper. Cras eu mi massa, quis gravida lectus. Pellentesque id tellus non odio tincidunt commodo. Quisque sit amet tortor sapien, sit amet lacinia nisl. Praesent felis tellus, tempus nec consectetur consectetur, vestibulum non dui. Duis egestas faucibus ipsum a commodo. In eleifend, est quis tempus pulvinar, magna nulla Vestibulum consectetur mi enim. Donec egestas laoreet elit vel consequat. Nullam sit amet lectus ac urna venenatis rhoncus eget vitae mi. Pellentesque eu massa eget est auctor</section> 
+				</div>
+                
+                </td>
+			</tr>
+          </tbody>
+    </table>
+	Change Controls <input type="submit" name="change" value="Change" class="profile">
+	<table width="100%" border="0" class="usr_list_tbl" cellpadding="0" cellspacing="0">
+         <thead>
+              <tr>
+                <th width="25%" align="left" class="roles_permission_tblcol1">Section Name</th>
+                <th width="25%" align="center">Decision Maker</th>
+                <th width="30%" align="left">Representing Interests Of</th>
+                <th width="20%" align="center">Action</th>
+              </tr>
+          </thead>
+          <tbody>
+              <tr class="odd">
+              	<td align="left" class="roles_permission_tblcol1">Entire Document</th>
+                <td align="center"><img src="img/user_icon.png" style="vertical-align:middle">James,Jacob</td>
+                <td align="left">The Company</td>
+                <td align="center"><a href="#">Delete</a></td>
+              </tr>
+          </tbody>
+    </table>
+    <div>
+       <input type="submit" name="done" value="Done">
+    </div>
+    
+</div>
+    
+
+</div>
+<div style="clear:both"></div>
+<footer>Copyright 2013 Cosentium Inc. | <a class="underline" href="#"><span>Terms of Use</span></a> | <a class="underline" href="#"><span>Security</span></a> | <a class="underline" href="#"><span>Privacy</span></a> | 1.0v</footer>
+</div>
+</div>
+</div>
+</body>
+</html>

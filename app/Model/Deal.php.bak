@@ -1,0 +1,194 @@
+<?php
+App::import('Model', 'Redline');
+App::import('Model', 'MasterDoc');
+class Deal extends AppModel {
+	
+	public $name = 'Deal';
+	//public $useTable = '';
+	
+	//*** BEGIN : Validation of form fields 
+	public $validate = array(
+		'name' => array(
+                    'rule1' => array('rule' => array('checkEmptyName'), 'message' => 'You must enter a value.'),
+                    'rule2' => array('rule' => '/^[a-zA-Z0-9\s\']+$/i', 'message' => 'Entry can only contain alphabet letters and numbers only.'),
+                    'rule3' => array('rule' => array('checkDealName'),  'on' => 'create', 'message' => 'Deal name already in use.')
+		),
+		'customer_name' => array(
+                    'rule1' => array('rule' => array('checkEmptyCustomerName'), 'message' => 'You must enter a value.'),
+                    'rule2' => array('rule' => '/^[a-zA-Z0-9\s\']+$/i', 'message' => 'Entry can only contain alphabet letters and numbers only.'),
+                    'rule3' => array('rule' => array('maxLength', 20), 'message' => 'Please enter your last name max 20 character.'),
+		),
+		'recipient_name' => array(
+                    'rule1' => array('rule' => array('checkEmptyRecipientName'), 'message' => 'You must enter a value.'),
+                    'rule2' => array('rule' => '/^[a-zA-Z0-9\s\']+$/i', 'message' => 'Entry can only contain alphabet letters and numbers only.'),
+                    'rule3' => array('rule' => array('maxLength', 20), 'message' => 'Please enter your last name max 20 character.'),
+		),
+		'master_docs_id' => array(
+                    'rule1' => array('rule' => array('checkMaster'), 'message' => 'You must make a selection.'),
+		),
+		'recipient_email' => array(
+                    'rule1' => array('rule' => array('checkEmptyEmail'), 'message' => 'You must enter a value.'),
+                    'rule2' => array('rule'    => '/^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(\.[a-zA-Z]{2,3})$/', 'message' => 'Enter a properly formed email address.  For example john@company.com')
+		)
+        );        
+     
+		public $belongsTo=array (
+            'User' => array(
+                'classname' => 'User',
+                'foreignKey' => false,
+				'fields' => array('User.id', 'User.first_name', 'User.last_name', 'User.username', 'User.image'),
+                'conditions' => 'Deal.user_id = User.id'
+            ),
+            'MasterDoc' => array (
+                'classname' => 'MasterDoc',
+                'foreignKey' => false,
+				'fields' => array('MasterDoc.id', 'MasterDoc.available_after_dt', 'MasterDoc.available_until_dt', 'MasterDoc.files_id', 'MasterDoc.validity', 'MasterDoc.name'),
+                'conditions' => 'Deal.master_docs_id = MasterDoc.id'
+            )
+        );
+		
+	function __construct() {
+		parent::__construct();
+		$this->tablePrefix = CakeSession::read('user.Company.company_name'). '_';
+		$this->useTable = 'deals';
+	}
+	
+	public function checkEmptyName($data) {
+		if(empty($data['name'])) {
+			return false;
+		}
+		return true;
+	}
+
+	public function checkDealName($data){
+		$cnt = $this->find('count', array('conditions' => array('Deal.name =' => trim($data['name']) ) ));
+		if($cnt != 0) {
+			return false;
+		} else
+			return true;
+	}
+
+	public function checkEmptyCustomerName($data) {
+		if(empty($data['customer_name'])) {
+			return false;
+		}
+		return true;
+	}
+
+	public function checkEmptyRecipientName($data) {
+		if(empty($data['recipient_name'])) {
+			return false;
+		}
+		return true;
+	}
+
+	public function checkEmptyEmail($data) {
+		if(empty($data['recipient_email'])) {
+			return false;
+		}
+		return true;
+	}
+
+	public function checkMaster($data) {
+		if ($data['master_docs_id'] == 0) {
+			return FALSE;
+		} 
+		return TRUE;
+	}
+	//*** END : Validation of form fields 
+	
+	/**
+	 * @name 			getDealCondition 
+	 * @description		         			
+	 * @parm	        deal type 0(all),1(unexpired),2(expired)
+	 * @return	        	 
+	 */
+	public function getDealCondition($type) {
+		// 1. Getting all Unexpired Deals
+		$dealCondition = array(
+								'MasterDoc.available_deal_issue' => 1,
+								'Deal.created <=' => date(Configure::read('DB_DATE_FORMAT'), strtotime(date(Configure::read('DB_DATE_FORMAT')))),
+								'Deal.expiry >=' => date(Configure::read('DB_DATE_FORMAT'), strtotime(date(Configure::read('DB_DATE_FORMAT'))))
+							);
+		if( $type == 0 ) {
+		// 2. Getting all Deals
+			$dealCondition = array(
+									'MasterDoc.available_deal_issue' => 1);
+		} elseif ( $type == 2 ) {
+		// 3. Getting all Expired Deals
+			$dealCondition = array(
+									'MasterDoc.available_deal_issue' => 1,
+									'Deal.expiry <=' => date(Configure::read('DB_DATE_FORMAT'), strtotime(date(Configure::read('DB_DATE_FORMAT'))))
+								);
+		}
+		return $dealCondition;
+	}
+	
+	/**
+	 * @name 			getDealDetails 
+	 * @description		         			
+	 * @parm	        deal_id
+	 * @return	        deal data	 
+	 */
+	public function getDealDetails($dealId) {
+		return $this->find('first', array('conditions' => array('Deal.id' => $dealId)));
+	}
+	public function getDealDetailsEmailID($emailQueueId) {
+		return $this->find('first', array('conditions' => array('Deal.email_id' => $emailQueueId)));
+	}
+	
+	/**
+	 * @name 			getDealHistory 
+	 * @description		Getting deal revisions         			
+	 * @parm	        deal_id
+	 * @return	        deal revisions data	 
+	 */
+	public function getDealHistory($dealId) {
+		$Redline = new Redline();
+		return $Redline->getDealRedlines($dealId);
+	}
+	
+	/**
+	 * @name 			addNewDeal 
+	 * @description		Saving deal and deal revision data         			
+	 * @parm	        deal data
+	 * @return	        deal revisions data	 
+	 */
+	public function addNewDeal($dealInfo) {
+        // Get the insert id and add new deal in deals table -- email id
+		$dealInfo['Deal']['stage'] = Configure::read('DOC_ISSUED_STAGE');
+		$dealInfo['Deal']['turn'] = 1;
+		$dealInfo['Deal']['user_id'] = CakeSession::read('user.User.id');
+		//Adding Entry in Deals table
+		$this->create();
+		$dealInfo['Deal'] = array_map('trim', $dealInfo['Deal']);
+		$this->data = $dealInfo['Deal'];
+		$this->Save($dealInfo);
+		// Adding Entry in the deal_revisions(redlines) table -- deal id
+		$dealId = $this->getLastInsertID();
+          if( empty($dealId)) {
+            return Configure::read('ADD_DEAL_FAIL');
+          }
+		// Get the files id from the email table
+		$redline = new Redline();
+		$redlineData[$redline->name] = array(
+						'deal_id' => $dealId,
+						'stage'   => $dealInfo['Deal']['stage'],
+						'turn'   => $dealInfo['Deal']['turn'],
+						'material_changes'   => 0,
+						'non_material_changes'   => 0,
+						'total_changes'   => 0,
+						'user_id'   => $dealInfo['Deal']['user_id'],
+						'files_id' => 42
+			);
+            if($redline->saveRedline($redlineData)) {
+                return Configure::read('ADD_DEAL_SUCCESS');
+            } else {
+                return Configure::read('ADD_DEAL_FAIL');
+            }
+
+		return true;
+	}
+}
+
+

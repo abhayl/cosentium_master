@@ -1,0 +1,315 @@
+<?php
+class MasterDocsController extends AppController {
+    
+    public $uses = array('MasterDoc', 'MasterdocUser', 'RepresentingInterest','File', 'User', 'UserCompany', 'Company', 'Section','Section', 'SectionUser', 'RolesPermissions');
+    
+    
+	Public function _displayContract(){
+		$data = $this->MasterDoc->displayHtml();
+		$this->set('data', $data);
+		$this->render('contract');
+	}
+	
+	public function contract() {
+		$this->set('confirm_message', __('Delete This Section and it&#039;s change control?'));
+		$masterDocUsersData = $this->MasterDoc->getUsersByCompanyId(CakeSession::read('user.Company.id'));
+		$listing = $this->MasterDoc->getSectionData();
+		$masterDocData = $this->MasterDoc->getMasterDocById(CakeSession::read('masterDoc.MasterDoc.files_id'));
+		$this->set('masterDocData',$masterDocData);
+		if($listing) {
+			// Getting tool tip data
+			$className = '';
+			foreach($listing as $key=>$section) {
+				$names = $this->MasterDoc->getOpinionProviderByIdToolTip($section['Section']['id']);
+				$listing[$key]['Section']['opinionproviders'] = ($names) ? $names : 'NA';	
+				if( $section['Section']['name'] != 'ENTIRE DOCUMENT' && $className == '') {
+					$className = ".". str_replace(' ','_', $section['Section']['name']);
+				} elseif ( $section['Section']['name'] != 'ENTIRE DOCUMENT' ) {
+					$className .= ",." . str_replace(' ','_', $section['Section']['name']);
+				}
+			}
+			$this->set('sectionListing', $listing);
+			$this->set('className', $className);
+		}
+		$this->_displayContract($this->action);
+	}
+	
+	public function contractAssignement() {
+		$this->set('confirm_message', __('Please Select an area of Text'));
+		$this->set('validateSectionName', __('Please give Selected section a Name'));
+		$this->set('validateUniqueSectionName', __('This section name is already used'));
+		$this->set('validateSpcCharsSectionName', __('Special Characters are not allowed in Section Name'));
+		$this->Session->write('actionName', $this->action);
+		$masterDocData = $this->MasterDoc->getMasterDocById(CakeSession::read('masterDoc.MasterDoc.files_id'));
+		$this->set('masterDocData', $masterDocData);
+		$this->_displayContract($this->action);
+	}
+	
+	
+	Public function removeSections(){
+		$updatedHtml = $this->request->data['removedSectionContract'];
+		$this->MasterDoc->saveHtml($updatedHtml,$this->request->data['removedSectionId']);
+		$this->MasterDoc->removeSectionUsers($this->request->data['removedSectionId']);
+		$this->redirect('contract');
+	}
+	
+	Public function validateSectionName() {
+		$this->layout = 'ajax'; // Or $this->RequestHandler->ajaxLayout, Only use for HTML
+		$this->autoLayout = false;
+		$this->autoRender = false;
+		$sectionName = str_replace('','_',trim($this->data['name']));
+		$return = $this->MasterDoc->validateSection($sectionName);
+		echo $return;
+		return;
+	}
+    
+    public function addMasterDoc() {
+        //set page title
+        $this->set('title_for_layout', __('Add Master Document | Upload'));
+        
+        $filesize = NULL;
+        $masterdocData = array('files_id' => NULL);
+        $submitted = NULL;
+        if ($this->request->is('post')) {
+            $this->MasterDoc->data = $this->request->data;
+            if ($this->MasterDoc->validates()) { 
+                $submitted = 1;
+                $masterdocData = $this->MasterDoc->uploadMasterDoc($this->request->data);
+                if ($masterdocData == Configure::read('MASTER_DOC_FAIL')) {
+                    $this->redirect('/companies/message/fail');
+                }
+                $filesize = $this->request->data['MasterDoc']['s3_key']['size']/1000;
+                CakeSession::write('masterDocFileId', $masterdocData['files_id']);
+            }
+        }
+        $this->set('filesize',$filesize);
+        $this->set('masterdocData',$masterdocData);
+        $this->set('submitted',$submitted);
+    }
+    
+    public function describeMasterDoc() {
+        //set page title
+        $this->set('title_for_layout', __('Add Master Document | Describe Document'));
+        
+        //delete section session
+        $this->Session->delete('lastSectionsUsersId');
+        $this->Session->delete('getLastInsertedId');
+        if(CakeSession::read('masterDocFileId') != ''){
+            $masterDocData = $this->MasterDoc->getMasterDocByIdForDescribe(CakeSession::read('masterDocFileId'));
+            if(!empty($masterDocData)){
+                foreach($masterDocData as $masterDocData){
+					unset($masterDocData['MasterDoc']['converted_html']);
+                    CakeSession::write('masterDoc', array(
+                          'MasterDoc' => array ('id' => $masterDocData['MasterDoc']['id'], 'files_id' => $masterDocData['MasterDoc']['files_id']),
+                           'Section' => array('id' => $masterDocData['Section']['id']),
+                           'SectionUser' => array('id' => $masterDocData['SectionUser']['id'])
+                       ));
+                }
+            }
+            //CakeSession::write('masterDoc', $masterDocData);
+        }
+        if ($this->request->is('post')) { 
+            if (!empty($this->request->data['MasterdocUser']['docid'])) {
+                $masterDocData = $this->MasterDoc->getMasterDocByIdForDescribe($this->request->data['MasterdocUser']['docid']);
+			if(!empty($masterDocData)){
+                   foreach($masterDocData as $masterDocData){
+					   unset($masterDocData['MasterDoc']['converted_html']);
+                       CakeSession::write('masterDoc', array(
+                          'MasterDoc' => array ('id' => $masterDocData['MasterDoc']['id'], 'files_id' => $masterDocData['MasterDoc']['files_id']),
+                           'Section' => array('id' => $masterDocData['Section']['id']),
+                           'SectionUser' => array('id' => $masterDocData['SectionUser']['id'])
+                       ));
+                   }
+               }
+                CakeSession::write('masterDocFileId', $this->request->data['MasterdocUser']['docid']);
+            } else {
+                $this->MasterDoc->data = $this->request->data;
+                if($this->request->data['MasterDoc']['name'] == $masterDocData['MasterDoc']['name']){
+                    unset($this->MasterDoc->validate['name']['rule2']);
+                }
+				
+				if($this->MasterDoc->validateForm($this->request->data)){
+				   $this->request->data['MasterDoc']['available_after_dt'] = date("Y-m-d", strtotime($this->request->data['CalenderMasterDoc']['available_after_dt']));
+					$this->request->data['MasterDoc']['available_until_dt'] = date("Y-m-d", strtotime($this->request->data['CalenderMasterDoc']['available_until_dt']));
+					$this->request->data['MasterDoc']['available_deal_issue'] = 1;
+					if ($this->MasterDoc->saveData($this->request->data['MasterDoc'], true, $masterDocData['MasterDoc']['id'])) {
+						$this->redirect(array('action' => 'defaultChangeControl'));
+					} else {
+						$this->redirect('/companies/message/fail');
+					}
+				}
+            }
+        }
+        if (!$masterDocData['User']['image']) {
+            $profileImage = Configure::read('DEFAULT_IMAGE_NAME');
+            $amazonS3ServerPath ="";
+        } else {
+            $profileImage = $masterDocData['User']['image'];
+            $amazonS3ServerPath = Configure::read('AWS_PROFILE_IMG_IMAGES_URL');
+        }
+        $this->set('range',array_combine(range(1,120), range(1,120)));
+        $this->set('masterDocData',$masterDocData);
+        $this->set('profileImage',$profileImage);
+        $this->set('amazonS3ServerPath',$amazonS3ServerPath);
+        $this->set('confirm_message',Configure::read('DESCRIBE_MASTERDOC_CONFIRMATION_MSG'));
+    }
+
+    public function defaultChangeControl($id = null){
+        //set page title
+        $this->set('title_for_layout', __('Add Master Document | Define default change controls'));
+        
+        //delete opinion provider if id is not null
+        if(!empty($id)){
+            if ($this->MasterDoc->deleteOpinionProvider($id)) {
+                $this->redirect(array('action' => 'defaultChangeControl'));
+            } else {
+                $this->redirect('/companies/message/fail');
+            }
+        }
+        
+        if($this->Session->read('lastSectionsUsersId') == null) {
+            //set section id and section user for master document
+            $sectionId = $this->Session->read('masterDoc.Section.id');
+            $sectionUserId = $this->Session->read('masterDoc.SectionUser.id');
+        } else {
+            //set section id and section user for section
+            $sectionId = $this->Session->read('getLastInsertedId');
+            $sectionUserId = $this->Session->read('lastSectionsUsersId');
+        }
+        
+        //get master document data  
+        $masterDocData = $this->MasterDoc->getMasterDocById(CakeSession::read('masterDoc.MasterDoc.files_id'));
+        
+        //get decision maker data of master document or section based on above conditions
+        $masterDocDecisionData = $this->MasterDoc->getSectionData($sectionUserId);
+
+        //get decision maker data of master document or section based on above conditions
+        $opinionProviderData = $this->MasterDoc->getOpinionProviderById($sectionId);
+       
+        $this->set('masterDocDecisionData', $masterDocDecisionData);
+        $this->set('masterDocData', $masterDocData);
+        $this->set('opinionProviderData',$opinionProviderData);
+        
+        if (!$masterDocData['User']['image']) {
+          $profileImage = Configure::read('DEFAULT_IMAGE_NAME');
+        } else {
+          $profileImage = $masterDocData['User']['image'];
+        }
+        $this->set('profileImage',$profileImage);
+        if ($this->request->is('post')) {
+			if(!empty($this->request->data['sectionName']) && !empty($this->request->data['contract'])) {
+					$currentAction = $this->Session->read('actionName');
+					$this->set('currentAction', $currentAction);
+					$sectionName = trim($this->request->data['sectionName']);
+					$sectionName = str_replace(' ','_',$sectionName);
+					$html = str_replace('marked', $sectionName, $this->request->data['contract']);
+					$saveHtml = $this->MasterDoc->saveHtml($html, $sectionName);
+					$section = array('master_docs_id' => $masterDocData['MasterDoc']['id'], 'name' => $sectionName);
+					$getLastInsertedId = $this->Section->saveData($section,true,Null);
+
+					$sectionUsers = array('sections_id' => $getLastInsertedId, 'user_id' => $masterDocData['User']['id'], 'representing_interest_of' => $masterDocData['SectionUser']['representing_interest_of'], 'custom_description' => $masterDocData['SectionUser']['custom_description'], 'act_as' => Configure::read('DECISION_MAKER'));
+
+					$lastSectionsUsersId = $this->SectionUser->saveData($sectionUsers,true,Null);
+
+					$this->Session->write('getLastInsertedId',$getLastInsertedId);
+					$this->Session->write('lastSectionsUsersId',$lastSectionsUsersId);
+					$this->Session->write('PostedSectionName',$this->request->data['sectionName']);
+					$action = $this->Session->read('actionName');
+					$this->set('actionName', $action);
+					$this->Session->delete('actionName');
+					$this->redirect('defaultChangeControl');
+			} else {
+				$this->redirect('defaultChangeControl');
+			}
+		}
+		//added by krishna
+		$this->set('currentAction',$this->action);
+		//added by krishna
+       $this->set('confirm_message', Configure::read('REM_OPINION_CONFIRMATION_MSG'));
+    }
+    
+    public function changeUsers($id = null){
+        $this->set('title_for_layout', __('Add Master Document | Define default change controls'));
+        if($this->Session->read('lastSectionsUsersId') == null) {
+            	$sectionId = $this->Session->read('masterDoc.Section.id');
+			$sectionUserId = $this->Session->read('masterDoc.SectionUser.id');
+		} else {
+			$sectionId = $this->Session->read('getLastInsertedId');
+			$sectionUserId = $this->Session->read('lastSectionsUsersId');
+		}
+        
+        $this->set('representingInterestDd', CakeSession::read('representingInterest'));	
+		$masterDocDecisionData = $this->MasterDoc->getSectionData($sectionUserId);	
+        $masterDocData = $this->MasterDoc->getMasterDocById(CakeSession::read('masterDoc.MasterDoc.files_id'));
+        
+        $decisionMakerData = $this->MasterDoc->decisionMakerById($masterDocData['Section']['id']);
+        $opinionProviderData = $this->MasterDoc->getOpinionProviderById($sectionId);
+
+        $opinionProviderUserId = array();
+        $opinionProviderUser = array();
+        if(!empty($opinionProviderData)){
+            foreach($opinionProviderData as $opinionProviderData){
+                $opinionProviderUserId[] = $opinionProviderData['SectionUser']['user_id'];
+                $opinionProviderUser[$opinionProviderData['SectionUser']['user_id'].'_representing_interest_of'] = $opinionProviderData['SectionUser']['representing_interest_of'];
+                $opinionProviderUser[$opinionProviderData['SectionUser']['user_id'].'_custom_description'] = $opinionProviderData['SectionUser']['custom_description'];
+            }
+        }
+
+        $masterDocUsersData = $this->MasterDoc->getUsersByCompanyId(CakeSession::read('user.Company.id'));
+        
+        if ($this->request->is('post')) {
+            if (array_key_exists(Configure::read('ADD_OPINION_PROVIDER'), $this->request->data)) {
+
+                if($this->Session->read('lastSectionsUsersId') != NULL) {
+                    $result = $this->MasterDoc->changeOpinionProvider($this->request->data, $this->Session->read('getLastInsertedId'));
+                    if ($result == Configure::read('MASTER_DOC_FAIL')) {
+                        $this->redirect('/companies/message/fail');
+                    }
+                } else {
+                   $result = $this->MasterDoc->changeOpinionProvider($this->request->data, $this->Session->read('masterDoc.Section.id'));
+                   if ($result == Configure::read('MASTER_DOC_FAIL')) {
+                        $this->redirect('/companies/message/fail');
+                   }
+                }
+                    
+            //$this->Masterdoc->changeOpinionProvider($this->request->data);
+            } else {
+                if($this->Session->read('lastSectionsUsersId') != NULL) {
+				echo "111";
+				$result = $this->MasterDoc->changeDecisionMaker($this->request->data, $this->Session->read('lastSectionsUsersId'));
+				pr($result);
+				exit;
+                    if ($result == Configure::read('MASTER_DOC_FAIL')) {
+                        $this->redirect('/companies/message/fail');
+                    }
+				//$this->Session->delete('lastSectionsUsersId');
+			} else {
+			echo "2";
+				$result = $this->MasterDoc->changeDecisionMaker($this->request->data, $this->Session->read('masterDoc.SectionUser.id'));
+				pr($result);
+				exit;
+                    if ($result == Configure::read('MASTER_DOC_FAIL')) {
+                        $this->redirect('/companies/message/fail');
+                    }
+               }
+                
+            }
+			
+			
+            $this->redirect(array('action' => 'defaultChangeControl'));
+        }
+        $this->set('masterDocUsersData',$masterDocUsersData);
+        $this->set('masterDocData',$masterDocData);
+		
+        $this->set('masterDocDecisionData',$masterDocDecisionData);
+		
+        $this->set('opinionProviderData',$opinionProviderData);
+        
+        $this->set('opinionProviderUser',$opinionProviderUser);
+        $this->set('decisionMakerData',$decisionMakerData[0]);
+        $this->set('opinionProviderUserId',$opinionProviderUserId);
+        
+        $this->set('id',$id);
+    }
+}
+?>
